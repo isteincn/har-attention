@@ -5,7 +5,6 @@ Created on Thu Nov 30 19:29:42 2017
 
 @author: haoxiang
 """
-from collections import Counter
 
 import random
 import numpy as np
@@ -21,9 +20,25 @@ LABEL_NAME = "activity"
 NUM_CLASSES = 25
 
 
-def read_data(path="data/pamap2/train.dat"):
+def read_data(path="data/pamap2/train.dat", filter_act=True):
     df = pd.read_csv(path, sep=" ", lineterminator="\n", header=None, names=COL_NAMES)
     df = df.dropna()
+    if filter_act:
+        df = filter_activities(df)
+    return df
+
+
+# filter certain activities
+def filter_activities(df, act_ids=None):
+    # default activities to filter in the paper
+    if act_ids is None:
+        act_ids = [1, 2, 3, 4, 5, 6, 7, 12, 13, 16, 17, 24]
+    # fitler act_ids
+    df = df[df.apply(lambda x: int(x['activity']) in act_ids, axis=1)]
+    # transform activities
+    df["activity"] = df["activity"].apply(lambda x: act_ids.index(int(x)))
+    global NUM_CLASSES
+    NUM_CLASSES = len(act_ids)
     return df
 
 
@@ -71,9 +86,9 @@ def get_random_batch(ds="train", batch_size=1024, window=64, one_hot=False, retu
     return
 
 
-df_train = read_data("data/pamap2/train.dat")
-df_validate = read_data("data/pamap2/validate.dat")
-df_test = read_data("data/pamap2/test.dat")
+df_train = read_data("data/pamap2/test.dat", filter_act=False)
+df_validate = read_data("data/pamap2/validate.dat", filter_act=False)
+df_test = read_data("data/pamap2/test.dat", filter_act=False)
 
 #
 # df = read_data("data/small.csv")
