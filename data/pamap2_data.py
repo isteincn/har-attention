@@ -34,7 +34,7 @@ def filter_activities(df, act_ids=None):
     if act_ids is None:
         act_ids = [1, 2, 3, 4, 5, 6, 7, 12, 13, 16, 17, 24]
     # fitler act_ids
-    df = df[df.apply(lambda x: int(x['activity']) in act_ids, axis=1)]
+    df = df[df["activity"].apply(lambda x: x in act_ids)]
     # transform activities
     df["activity"] = df["activity"].apply(lambda x: act_ids.index(int(x)))
     global NUM_CLASSES
@@ -86,9 +86,9 @@ def get_random_batch(ds="train", batch_size=1024, window=64, one_hot=False, retu
     return
 
 
-df_train = read_data("data/pamap2/train.dat", filter_act=False)
-df_validate = read_data("data/pamap2/validate.dat", filter_act=False)
-df_test = read_data("data/pamap2/test.dat", filter_act=False)
+df_train = read_data("data/pamap2/train.dat", filter_act=True)
+df_validate = read_data("data/pamap2/validate.dat", filter_act=True)
+df_test = read_data("data/pamap2/test.dat", filter_act=True)
 
 #
 # df = read_data("data/small.csv")
