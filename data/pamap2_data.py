@@ -86,7 +86,7 @@ def get_random_batch(ds="train", batch_size=1024, window=64, one_hot=False, retu
     return
 
 
-df_train = read_data("data/pamap2/test.dat", filter_act=False)
+df_train = read_data("data/pamap2/train.dat", filter_act=False)
 df_validate = read_data("data/pamap2/validate.dat", filter_act=False)
 df_test = read_data("data/pamap2/test.dat", filter_act=False)
 
