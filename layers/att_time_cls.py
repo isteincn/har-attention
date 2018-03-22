@@ -16,10 +16,11 @@ from keras.engine.topology import Layer
 
 class Attention(Layer):
 
-    def __init__(self, output_dim, **kwargs):
+    def __init__(self, output_dim, continuous=False, **kwargs):
         self.output_dim = output_dim
         assert "batch_size" in kwargs
         self.batch_size = kwargs["batch_size"]
+        self.continuous = continuous
         super(Attention, self).__init__(**kwargs)
 
     def build(self, input_shape):
@@ -59,6 +60,10 @@ class Attention(Layer):
         att = K.dot(energy, self.weight_att)
         att = K.softmax(att)
 
+        # calc continuous regularization
+        if self.continuous:
+            loss = 0.1 * K.sum(K.sum(K.abs(att[:,1:] - att[:,0:-1]), 0, True)) / self.n_timestep
+            self.add_loss(loss, inputs)
         # weighted sum of hidden outputs
         # att: (batch, 1, timestep), input: (batch, time step, hidden)
         att = tf.expand_dims(att, 1)
