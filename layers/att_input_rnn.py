@@ -14,10 +14,11 @@ from keras.engine.topology import Layer
 # Input is last hidden state of RNN, and generate weights for time steps and sensors
 # attention only on time, is a special case where sensor = 1
 class Attention(Layer):
-    def __init__(self, n_feature=12, n_sensor=1, **kwargs):
+    def __init__(self, n_feature=12, n_sensor=1, continuous=False, **kwargs):
 
         self.n_sensor = n_sensor
         self.n_feature = n_feature
+        self.continuous = continuous
 
         if n_feature % n_sensor != 0:
             raise ValueError("Num features must be multiple of num sensors")
