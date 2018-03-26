@@ -7,21 +7,22 @@ LSTM on pamap2 dataset
 """
 
 import data.pamap2_data as pamap2_data
+import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
 from keras_model_factory import *
-
-import numpy as np
+from sklearn.metrics import f1_score
 
 # hyper params
 num_steps = 256
 num_layers = 2
 num_features = len(pamap2_data.FEATURE_NAMES)
 num_classes = pamap2_data.NUM_CLASSES
-num_hidden_units = 256
+num_hidden_units = 64
 num_epochs = 1000
-batch_size = 1024
+batch_size = 512
 epoch_size = 5
+num_heads = 12
 
 
 def train(model, data):
@@ -42,11 +43,26 @@ def train(model, data):
         x_arr = np.array(x)
         ts_loss, ts_acc = model.test_on_batch(x_arr, y)
         print("\t".join(["Epoch Val: ", str(epoch), " Loss:", str(ts_loss), " Acc: ", str(ts_acc)]))
+        y_pred = np.argmax(model.predict_on_batch(x_arr), axis=1)
+        y_true = np.argmax(y, axis=1)
+        print("\t".join(["F1 Score: ", str(f1_score(y_true, y_pred, average="macro"))]))
+
         print("=====" * 20)
 
 
 # model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
 # train(model_lstm, pamap2_data)
 
-model_att_hidden = create_attention_time_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-train(model_att_hidden, pamap2_data)
+# model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# train(model_att_hidden, pamap2_data)
+
+# model_att_input = create_attention_input_rnn_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# train(model_att_input, pamap2_data)
+
+#
+# model_att_input = create_attention_input_rnn_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# train(model_att_input, pamap2_data)
+
+
+model_att_multihead_input = create_attention_input_multihead_model(batch_size, num_hidden_units, num_steps, num_features, num_classes, num_heads)
+train(model_att_multihead_input, pamap2_data)
