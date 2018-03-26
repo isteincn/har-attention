@@ -62,8 +62,16 @@ class Attention(Layer):
         att = K.softmax(att) * self.n_sensor
 
         # format output
-        # att: (batch, timestep * sensor) -> (batch, timestep, num_features)
+        # att: (batch, timestep * sensor) -> (batch, timestep, sensor)
         att = K.reshape(att, (self.batch_size, self.n_timestep, self.n_sensor, 1))
+
+        if self.continuous:
+            l1_loss = 0.1 * K.sum(K.sum(K.abs(att[:, 1:] - att[:, 0:-1]), 0, True)) / self.n_timestep
+            l2_loss = 0.01 * K.sum(K.sqrt(K.sum(K.square(K.abs(att[:, 1:] - att[:, 0:-1])), 0, True))) / self.n_timestep
+            self.add_loss(l1_loss, inputs)
+            self.add_loss(l2_loss, inputs)
+
+        # (batch, time step, sensors) -> (batch, time step, feature)
         att = K.repeat_elements(att, self.n_feature / self.n_sensor, 3)
         att = K.reshape(att, (self.batch_size, self.n_timestep, self.n_feature))
         return att
