@@ -12,7 +12,7 @@ from keras_model_factory import *
 from sklearn.metrics import f1_score
 
 # hyper params
-num_steps = 64
+num_steps = 128
 num_features = len(pamap2_data.FEATURE_NAMES)
 num_classes = pamap2_data.NUM_CLASSES
 num_hidden_units = 64
@@ -49,7 +49,7 @@ def train(model, data, random_batch=False, num_epochs=20, load=True):
 
 
 def test(model, data):
-    epoch_size = data.df_train.shape[0] / (num_steps / 2) / batch_size # num of batch per epoch
+    epoch_size = data.df_test.shape[0] / (num_steps / 2) / batch_size # num of batch per epoch
     ts_losses, ts_accs = [], []
     y_pred = np.array([0])
     y_true = np.array([0])
@@ -72,8 +72,11 @@ def test(model, data):
 # model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
 # train(model_lstm, pamap2_data)
 
-model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-train(model_att_hidden, pamap2_data, num_epochs=60)
+# model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# train(model_att_hidden, pamap2_data, num_epochs=60)
+
+model = create_attention_time_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+train(model, pamap2_data)
 
 # model_att_input = create_attention_input_rnn_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
 # train(model_att_input, pamap2_data)
