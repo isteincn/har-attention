@@ -62,14 +62,14 @@ class Attention(Layer):
 
         # calc continuous regularization
         if self.continuous:
-            loss = 0.1 * K.sum(K.sum(K.abs(att[:,1:] - att[:,0:-1]), 0, True)) / self.n_timestep
+            loss = K.sum(K.sum(K.abs(att[:,1:] - att[:,0:-1]), 0, True)) / self.n_timestep
             self.add_loss(loss, inputs)
         # weighted sum of hidden outputs
         # att: (batch, 1, timestep), input: (batch, time step, hidden)
-        att = tf.expand_dims(att, 1)
-        output = K.batch_dot(att, inputs)
-        output = tf.squeeze(output, 1)
-        return output
+        att = tf.expand_dims(att, -1)
+        # output = K.batch_dot(att, inputs)
+        # output = tf.squeeze(output, 1)
+        return att
 
     def compute_output_shape(self, input_shape):
-        return self.batch_size, self.n_hidden
+        return self.batch_size, self.n_timestep, 1
