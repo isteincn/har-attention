@@ -3,11 +3,14 @@ val_file="subject105.dat"
 test_file="subject106.dat"
 
 rm -f train.dat
+rm -f test.dat
+rm -f validate.dat
 
 for f in $train_files; do
 	echo "Merging " $f
-	awk '$2!=0 {print $1, $2, $5, $6, $7, $22, $23, $24, $39, $40, $41}' $f >> train.dat
+	awk -f clean.awk $f >> train.dat
 done
 
-awk '$2!=0 {print $1, $2, $5, $6, $7, $22, $23, $24, $39, $40, $41}' $val_file >> validate.dat
-awk '$2!=0 {print $1, $2, $5, $6, $7, $22, $23, $24, $39, $40, $41}' $test_file >> test.dat
+awk -f clean.awk $val_file >> validate.dat
+awk -f clean.awk $test_file >> test.dat
+
