@@ -9,22 +9,26 @@ Created on Thu Nov 30 19:29:42 2017
 import random
 import numpy as np
 import pandas as pd
+import os
 
-
-COL_NAMES = ["timestamp", "activity", "hand_x", "hand_y", "hand_z", "chest_x", "chest_y", "chest_z", "ankle_x",
-             "ankle_y", "ankle_z"]
-FEATURE_NAMES = ["hand_x", "hand_y", "hand_z", "chest_x", "chest_y", "chest_z", "ankle_x",
-                 "ankle_y", "ankle_z"]
+FEATURE_NAMES = ["Hand_" + str(i) for i in range(17)] + ["Chest_" + str(i) for i in range(17)] + ["Ankle_" + str(i) for i in range(17)]
+COL_NAMES = ["timestamp", "activity"] + FEATURE_NAMES
 LABEL_NAME = "activity"
 
-NUM_CLASSES = 25
+NUM_CLASSES = 12
 
 
-def read_data(path="data/pamap2/train.dat", filter_act=True):
+def read_data(path="data/pamap2/train.dat", filter_act=True, down_sample=True, from_cache=True):
+    if from_cache and os.path.exists(path + ".pickle"):
+        return pd.read_pickle(path + ".pickle")
+
     df = pd.read_csv(path, sep=" ", lineterminator="\n", header=None, names=COL_NAMES)
     df = df.dropna()
     if filter_act:
         df = filter_activities(df)
+    if down_sample:
+        df = df[df.index % 3 == 0]
+    df.to_pickle(path + ".pickle")
     return df
 
 
@@ -83,12 +87,68 @@ def get_random_batch(ds="train", batch_size=1024, window=64, one_hot=False, retu
         return get_random_batch_internal(df_validate, batch_size=batch_size, window=window, one_hot=one_hot, return_last=return_last)
     else:
         raise ValueError("data set must be train or validate or test")
-    return
+
+
+def get_next_batch_internal(df, idx, batch_size, window=64, overlap=0.5, one_hot=False, return_last=True):
+    n = df.shape[0]
+    x_batch = []
+    y_batch = []
+    for _ in xrange(batch_size):
+        if idx + window >= n:
+            idx = 0
+        x = df[idx:idx + window][FEATURE_NAMES].as_matrix()
+        y = df[idx:idx + window][LABEL_NAME].as_matrix()
+        x_batch.append(x)
+        if one_hot:
+            y_batch.append(one_hot_encode(y))
+        else:
+            y_batch.append(y)
+        idx += int(window * (1 - overlap))
+
+    if return_last:
+        y_last_batch = [y[-1] for y in y_batch]
+        if one_hot:
+            return idx, x_batch, np.vstack(y_last_batch)
+        else:
+            return idx, x_batch, np.array(y_last_batch)
+    else:
+        return idx, x_batch, y_batch
+
+
+def get_next_batch(ds="train", batch_size=1024, window=64, overlap=0.5, one_hot=False, return_last=True):
+    global train_idx
+    global validate_idx
+    global test_idx
+    global df_train
+    global df_validate
+    global df_test
+
+    if ds == "train":
+        next_idx, x_batch, y_batch = get_next_batch_internal(df_train, train_idx, batch_size, window, overlap,
+                                                             one_hot, return_last)
+        train_idx = next_idx
+        return x_batch, y_batch
+    elif ds == "test":
+        next_idx, x_batch, y_batch = get_next_batch_internal(df_test, test_idx, batch_size, window, overlap,
+                                                             one_hot, return_last)
+        test_idx = next_idx
+        return x_batch, y_batch
+    elif ds == "validate":
+        next_idx, x_batch, y_batch = get_next_batch_internal(df_validate, validate_idx, batch_size, window, overlap,
+                                                             one_hot, return_last)
+        validate_idx = next_idx
+        return x_batch, y_batch
+    else:
+        raise ValueError("data set must be train or validate or test")
 
 
 df_train = read_data("data/pamap2/train.dat", filter_act=True)
 df_validate = read_data("data/pamap2/validate.dat", filter_act=True)
 df_test = read_data("data/pamap2/test.dat", filter_act=True)
+
+train_idx = 0
+validate_idx = 0
+test_idx = 0
 
 #
 # df = read_data("data/small.csv")
