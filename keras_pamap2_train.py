@@ -8,8 +8,6 @@ LSTM on pamap2 dataset
 import os
 import data.pamap2_data as pamap2_data
 import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import Dense, LSTM
 from keras_model_factory import *
 from sklearn.metrics import f1_score
 
@@ -28,9 +26,7 @@ def train(model, data, random_batch=False, num_epochs=20, load=True):
 
     # load model if model file exists
     if load and os.path.exists(model.name + ".h5"):
-        name = model.name
-        model = load_model(model.name + '.h5')
-        model.name = name
+        model.load_weights(model.name + '.h5')
     for epoch in range(num_epochs):
         tr_losses = []
         tr_accs = []
@@ -73,11 +69,11 @@ def test(model, data):
 
 # Examples of training
 
-model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-train(model_lstm, pamap2_data)
+# model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# train(model_lstm, pamap2_data)
 
-# model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-# train(model_att_hidden, pamap2_data)
+model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+train(model_att_hidden, pamap2_data, num_epochs=60)
 
 # model_att_input = create_attention_input_rnn_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
 # train(model_att_input, pamap2_data)
