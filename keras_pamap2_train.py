@@ -28,8 +28,9 @@ def train(model, data, random_batch=False, num_epochs=20, load=True):
 
     # load model if model file exists
     if load and os.path.exists(model.name + ".h5"):
+        name = model.name
         model = load_model(model.name + '.h5')
-
+        model.name = name
     for epoch in range(num_epochs):
         tr_losses = []
         tr_accs = []
@@ -70,6 +71,7 @@ def test(model, data):
         f1_score(y_true, y_pred, average="macro")))
     return
 
+# Examples of training
 
 model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
 train(model_lstm, pamap2_data)
