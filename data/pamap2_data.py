@@ -18,7 +18,7 @@ LABEL_NAME = "activity"
 NUM_CLASSES = 12
 
 
-def read_data(path="data/pamap2/train.dat", filter_act=True, down_sample=True, from_cache=True):
+def read_data(path="data/pamap2/train.dat", filter_act=True, down_sample=True, std=True, from_cache=True):
     if from_cache and os.path.exists(path + ".pickle"):
         return pd.read_pickle(path + ".pickle")
 
@@ -28,6 +28,14 @@ def read_data(path="data/pamap2/train.dat", filter_act=True, down_sample=True, f
         df = filter_activities(df)
     if down_sample:
         df = df[df.index % 3 == 0]
+
+    if std:
+        ts_col = df["timestamp"].copy()
+        act_col = df["activity"].copy()
+        df = (df - df.mean()) / df.std()
+        df["timestamp"] = ts_col
+        df["activity"] = act_col
+
     df.to_pickle(path + ".pickle")
     return df
 
