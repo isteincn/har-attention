@@ -86,14 +86,15 @@ def create_attention_input_multihead_model(batch_size, num_hidden_units, num_ste
 def create_attention_input_rnn_hidden_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes):
     main_input = Input(batch_shape=(batch_size, num_steps, num_features), name='main_input')
     h = LSTM(num_hidden_units, input_shape=(num_steps, num_features), batch_size=batch_size, return_sequences=True)(main_input)
-
     att = att_input_rnn.Attention(n_feature=num_features, n_sensor=3, continuous=True, batch_size=batch_size, name="att_input")(h)
     x = Multiply()([main_input, att])
     lstm_out = LSTM(num_hidden_units, input_shape=(num_steps, num_features), batch_size=batch_size,
                     return_sequences=True)(x)
 
     att_hidden = att_time_cls.Attention([batch_size, num_hidden_units], batch_size=batch_size, continuous=True)(lstm_out)
-    out = Dense(num_classes, batch_size=batch_size, activation="softmax")(att_hidden)
+    ws_lstm = Dot(-2)([lstm_out, att_hidden])
+    ws_lstm = Reshape([num_hidden_units], input_shape=[num_hidden_units, 1])(ws_lstm)
+    out = Dense(num_classes, batch_size=batch_size, activation="softmax")(ws_lstm)
     model = Model(inputs=[main_input], outputs=[out], name="attention_input_rnn_hidden_continuous")
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
