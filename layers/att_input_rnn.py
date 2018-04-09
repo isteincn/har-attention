@@ -14,11 +14,15 @@ from keras.engine.topology import Layer
 # Input is last hidden state of RNN, and generate weights for time steps and sensors
 # attention only on time, is a special case where sensor = 1
 class Attention(Layer):
-    def __init__(self, n_feature=12, n_sensor=1, continuous=False, **kwargs):
+    def __init__(self, n_feature=12, n_sensor=1, continuous=False, l1_coef=0.1, **kwargs):
 
         self.n_sensor = n_sensor
         self.n_feature = n_feature
         self.continuous = continuous
+        if self.continuous:
+            self.l1_coef = l1_coef
+        else:
+            self.l1_coef = 0
 
         if n_feature % n_sensor != 0:
             raise ValueError("Num features must be multiple of num sensors")
@@ -66,10 +70,8 @@ class Attention(Layer):
         att = K.reshape(att, (self.batch_size, self.n_timestep, self.n_sensor, 1))
 
         if self.continuous:
-            l1_loss = 0.1 * K.sum(K.sum(K.abs(att[:, 1:] - att[:, 0:-1]), 0, True)) / self.n_timestep
-            l2_loss = 0.01 * K.sum(K.sqrt(K.sum(K.square(K.abs(att[:, 1:] - att[:, 0:-1])), 0, True))) / self.n_timestep
+            l1_loss = self.l1_coef * K.sum(K.sum(K.abs(att[:, 1:] - att[:, 0:-1]), 0, True)) / self.n_timestep
             self.add_loss(l1_loss, inputs)
-            self.add_loss(l2_loss, inputs)
 
         # (batch, time step, sensors) -> (batch, time step, feature)
         att = K.repeat_elements(att, self.n_feature / self.n_sensor, 3)
