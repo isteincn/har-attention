@@ -52,12 +52,12 @@ def train(model, data, random_batch=False, overlap=0.5, num_epochs=20, load=True
 
 
 def test(model, data, overlap=0.5):
-    epoch_size = data.df_test.shape[0] / (num_steps / 2) / batch_size # num of batch per epoch
+    epoch_size = data.df_test.shape[0] / int(overlap * num_steps) / batch_size # num of batch per epoch
     ts_losses, ts_accs = [], []
     y_pred = np.array([0])
     y_true = np.array([0])
     for _ in xrange(epoch_size):
-        x, y = data.get_next_batch("test", batch_size, num_steps, overlap=overlap, one_hot=True)
+        x, y = data.get_next_batch("validate", batch_size, num_steps, overlap=overlap, one_hot=True)
         x = np.array(x)
         ts_loss, ts_acc = model.test_on_batch(x, y)
         ts_losses.append(ts_loss)
@@ -71,25 +71,25 @@ def test(model, data, overlap=0.5):
     return
 
 def plot_raw_signals(x):
+    plt.subplot(311)
     x = x[:, [1, 18, 35]]
     plt.plot(x)
-    plt.show()
     return
 
 
-
 def plot_att(att):
+    plt.subplot(312)
     if len(att.shape) == 1: # plot 1-d time series
         plt.plot(att)
         plt.show()
     elif len(att.shape) == 2: # plot 2d as heatmap
-        plt.imshow(att, cmap='hot', interpolation='nearest')
-        plt.show()
+        plt.pcolor(att.transpose(), cmap="hot")
     else:
         raise ValueError("Attention dimension should be 1d or 2d")
 
 
 def visualize(model, data, activity):
+    plt.subplot(313)
     # load model if model file exists
     if os.path.exists(model.name + ".h5"):
         model.load_weights(model.name + '.h5')
@@ -99,15 +99,17 @@ def visualize(model, data, activity):
     epoch_size = data.df_train.shape[0] / (num_steps / 2) / batch_size
 
     for _ in xrange(epoch_size):
-        x, y = data.get_next_batch("train", batch_size, num_steps, overlap=0.5, one_hot=True)
+        x, y = data.get_next_batch("train", batch_size, num_steps, overlap=0.1, one_hot=True)
         x = np.array(x)
         y = np.argmax(y, axis=1)
         if activity * 1.0 in y:
             print("Found activity " + str(activity))
             act_idx = np.where(y == activity)
+            idx = act_idx[len(act_idx) / 2]
             layer_names = [l.name for l in model.layers]
 
-            plot_raw_signals(x[act_idx][-1])
+            plt.figure(1)
+            plot_raw_signals(x[idx][-1])
             if "att_hidden" in layer_names:
                 v_model = Model(inputs=model.input, outputs=model.get_layer("att_hidden").output)
                 att_hidden = np.squeeze(v_model.predict_on_batch(x)[act_idx][-1], -1)
@@ -116,8 +118,7 @@ def visualize(model, data, activity):
                 v_model = Model(inputs=model.input, outputs=model.get_layer("att_input").output)
                 att_input = v_model.predict_on_batch(x)[act_idx][-1]
                 plot_att(att_input)
-
-            return
+            plt.show()
     return
 
 
@@ -125,26 +126,25 @@ def visualize(model, data, activity):
 
 # Examples of training
 
-# model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-# train(model_lstm, pamap2_data)
+model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+train(model_lstm, pamap2_data, overlap=0.1)
 
-model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-# train(model_att_hidden, pamap2_data, num_epochs=60)
-visualize(model_att_hidden, pamap2_data, 3)
+# model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# # train(model_att_hidden, pamap2_data, num_epochs=60, overlap=0.1)
+# visualize(model_att_hidden, pamap2_data, 3)
 
 # model = create_attention_time_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
 # train(model, pamap2_data)
 
 # model_att_input = create_attention_input_rnn_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-# train(model_att_input, pamap2_data)
+# train(model_att_input, pamap2_data, overlap=0.1)
+# visualize(model_att_input, pamap2_data, 4)
+
+
 #
-# visualize(model_att_input, pamap2_data, 3)
-
-
-
-#model_att_input = create_attention_input_rnn_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-# train(model_att_input, pamap2_data)
-#isualize(model_att_input, pamap2_data, 3)
+# model = create_attention_input_rnn_hidden_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# train(model, pamap2_data, overlap=0.1)
+# visualize(model, pamap2_data, 3)
 
 #
 # model_att_multihead_input = create_attention_input_multihead_model(batch_size, num_hidden_units, num_steps, num_features, num_classes, num_heads)
