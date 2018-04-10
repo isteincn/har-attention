@@ -2,6 +2,7 @@ from keras import Model
 from keras.models import Sequential
 from keras.layers import Input, Dense, LSTM, RNN, Embedding, Concatenate, Multiply, Dot, Reshape
 from layers import att_time_cls, att_input_rnn, att_input_multihead
+from keras import optimizers
 
 
 def create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes):
@@ -11,7 +12,7 @@ def create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
-def create_attention_time_model(batch_size, num_hidden_units, num_steps, num_features, num_classes):
+def create_attention_time_model(batch_size, num_hidden_units, num_steps, num_features, num_classes, lr = 0.001):
     main_input = Input(batch_shape=(batch_size, num_steps, num_features), name='main_input')
     lstm_out = LSTM(num_hidden_units, input_shape=(num_steps, num_features), batch_size=batch_size,
                     return_sequences=True)(main_input)
@@ -22,7 +23,10 @@ def create_attention_time_model(batch_size, num_hidden_units, num_steps, num_fea
     ws_lstm = Reshape([num_hidden_units], input_shape=[num_hidden_units, 1])(ws_lstm)
     out = Dense(num_classes, batch_size=batch_size, activation="softmax")(ws_lstm)
     model = Model(inputs=[main_input], outputs=[out], name="attention_hidden")
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    #adam = optimizers.Adam(lr=lr)
+    sgd = optimizers.SGD(lr=0.01, clipvalue=0.5)
+    print('optimizer: sgd')
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
     return model
 
 

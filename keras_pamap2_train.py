@@ -70,9 +70,10 @@ def test(model, data, overlap=0.5):
         f1_score(y_true, y_pred, average="macro")))
     return
 
-def plot_raw_signals(x):
+def plot_raw_signals(x, axis_list):
+    # axis_list = [1, 18, 35]
     plt.subplot(311)
-    x = x[:, [1, 18, 35]]
+    x = x[:, axis_list]
     plt.plot(x)
     return
 
@@ -109,7 +110,10 @@ def visualize(model, data, activity):
             layer_names = [l.name for l in model.layers]
 
             plt.figure(1)
-            plot_raw_signals(x[idx][-1])
+            #plot_raw_signals(x[idx][-1])
+	    plot_raw_signals(x, [1, 18, 35])
+	    plot_raw_signals(x, [2, 19, 36])
+	    plot_raw_signals(x, [3, 20, 37])
             if "att_hidden" in layer_names:
                 v_model = Model(inputs=model.input, outputs=model.get_layer("att_hidden").output)
                 att_hidden = np.squeeze(v_model.predict_on_batch(x)[act_idx][-1], -1)
@@ -126,11 +130,11 @@ def visualize(model, data, activity):
 
 # Examples of training
 
-model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-train(model_lstm, pamap2_data, overlap=0.1)
+# model_lstm = create_lstm_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
+# train(model_lstm, pamap2_data, overlap=0.1)
 
 # model_att_hidden = create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
-# # train(model_att_hidden, pamap2_data, num_epochs=60, overlap=0.1)
+# train(model_att_hidden, pamap2_data, num_epochs=60, overlap=0.1)
 # visualize(model_att_hidden, pamap2_data, 3)
 
 # model = create_attention_time_model(batch_size, num_hidden_units, num_steps, num_features, num_classes)
