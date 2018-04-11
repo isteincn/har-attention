@@ -1,6 +1,6 @@
 from keras import Model
 from keras.models import Sequential
-from keras.layers import Input, Dense, LSTM, RNN, Embedding, Concatenate, Multiply, Dot, Reshape
+from keras.layers import Input, Dense, LSTM, RNN, Embedding, Concatenate, Multiply, Dot, Reshape, Dropout
 from layers import att_time_cls, att_input_rnn, att_input_multihead
 from keras import optimizers
 
@@ -22,15 +22,17 @@ def create_attention_time_model(batch_size, num_hidden_units, num_steps, num_fea
     ws_lstm = Dot(-2)([lstm_out, att])
     ws_lstm = Reshape([num_hidden_units], input_shape=[num_hidden_units, 1])(ws_lstm)
     out = Dense(num_classes, batch_size=batch_size, activation="softmax")(ws_lstm)
+    #out = Dropout(0.2)(out)
     model = Model(inputs=[main_input], outputs=[out], name="attention_hidden")
     #adam = optimizers.Adam(lr=lr)
     sgd = optimizers.SGD(lr=0.01, clipvalue=0.5)
-    print('optimizer: sgd')
-    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+    print('optimizer: adam')
+    adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.005) 
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
 
-def create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes):
+def create_attention_time_continuous_model(batch_size, num_hidden_units, num_steps, num_features, num_classes, lr = 0.001):
     main_input = Input(batch_shape=(batch_size, num_steps, num_features), name='main_input')
     lstm_out = LSTM(num_hidden_units, input_shape=(num_steps, num_features), batch_size=batch_size,
                     return_sequences=True)(main_input)
@@ -41,6 +43,8 @@ def create_attention_time_continuous_model(batch_size, num_hidden_units, num_ste
     ws_lstm = Reshape([num_hidden_units], input_shape=[num_hidden_units, 1])(ws_lstm)
     out = Dense(num_classes, batch_size=batch_size, activation="softmax")(ws_lstm)
     model = Model(inputs=[main_input], outputs=[out], name="attention_hidden")
+    print('optimizer: adam')
+    adagrad = optimizers.Adagrad(lr=0.01, epsilon=None, decay=0.005)
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 

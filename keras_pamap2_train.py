@@ -20,7 +20,8 @@ num_hidden_units = 64
 batch_size = 512
 num_heads = 12
 
-
+best_f1 = 0.0
+best_pred_tst_y  = []
 
 def train(model, data, random_batch=False, overlap=0.5, num_epochs=20, load=True):
     # calc num of batches per epoch
@@ -52,6 +53,7 @@ def train(model, data, random_batch=False, overlap=0.5, num_epochs=20, load=True
 
 
 def test(model, data, overlap=0.5):
+    global best_f1
     epoch_size = data.df_test.shape[0] / int(overlap * num_steps) / batch_size # num of batch per epoch
     ts_losses, ts_accs = [], []
     y_pred = np.array([0])
@@ -65,32 +67,42 @@ def test(model, data, overlap=0.5):
         y_pred = np.append(y_pred, np.argmax(model.predict_on_batch(x), axis=1))
         y_true = np.append(y_true, np.argmax(y, axis=1))
 
+    current_f1 = f1_score(y_true, y_pred, average="macro")
     print("Test Acc: %f\tLoss: %f\tF1 Score: %f" % (
         sum(ts_accs) / epoch_size, sum(ts_losses) / epoch_size,
-        f1_score(y_true, y_pred, average="macro")))
+        current_f1))
+    if (current_f1 > best_f1):
+	best_f1 = current_f1
+	best_pred_tst_y = y_pred
+	model.save(model.name + '_best.h5')
     return
 
-def plot_raw_signals(x, axis_list):
+def plot_raw_signals(x, axis_list, i):
     # axis_list = [1, 18, 35]
-    plt.subplot(311)
+    plt.subplot(i)
     x = x[:, axis_list]
-    plt.plot(x)
+    #plt.plot(x)
+    plt.plot(x[:, 0], label = 'arm', color = 'red')
+    plt.plot(x[:, 1], label = 'chest', color = 'green')
+    plt.plot(x[:, 2], label = 'ankel', color = 'blue')
     return
 
 
 def plot_att(att):
-    plt.subplot(312)
+    plt.subplot(514)
     if len(att.shape) == 1: # plot 1-d time series
         plt.plot(att)
         plt.show()
     elif len(att.shape) == 2: # plot 2d as heatmap
-        plt.pcolor(att.transpose(), cmap="hot")
+        plt.pcolor(att.transpose(), cmap="Wistia")
+	#heatmap = plt.pcolor(att.transpose(), cmap = 'Wistia')
+	#plt.colorbar(heatmap)
     else:
         raise ValueError("Attention dimension should be 1d or 2d")
 
 
 def visualize(model, data, activity):
-    plt.subplot(313)
+    plt.subplot(515)
     # load model if model file exists
     if os.path.exists(model.name + ".h5"):
         model.load_weights(model.name + '.h5')
@@ -98,6 +110,7 @@ def visualize(model, data, activity):
         raise ValueError("Please train and save the model first")
 
     epoch_size = data.df_train.shape[0] / (num_steps / 2) / batch_size
+    print(epoch_size)
 
     for _ in xrange(epoch_size):
         x, y = data.get_next_batch("train", batch_size, num_steps, overlap=0.1, one_hot=True)
@@ -107,22 +120,24 @@ def visualize(model, data, activity):
             print("Found activity " + str(activity))
             act_idx = np.where(y == activity)
             idx = act_idx[len(act_idx) / 2]
+	    print(idx)
             layer_names = [l.name for l in model.layers]
 
-            plt.figure(1)
-            #plot_raw_signals(x[idx][-1])
-	    plot_raw_signals(x, [1, 18, 35])
-	    plot_raw_signals(x, [2, 19, 36])
-	    plot_raw_signals(x, [3, 20, 37])
-            if "att_hidden" in layer_names:
-                v_model = Model(inputs=model.input, outputs=model.get_layer("att_hidden").output)
-                att_hidden = np.squeeze(v_model.predict_on_batch(x)[act_idx][-1], -1)
-                plot_att(att_hidden)
-            if "att_input" in layer_names:
-                v_model = Model(inputs=model.input, outputs=model.get_layer("att_input").output)
-                att_input = v_model.predict_on_batch(x)[act_idx][-1]
-                plot_att(att_input)
-            plt.show()
+	    for d in idx:
+		plt.figure(1)
+		#plot_raw_signals(x[idx][-1])
+		plot_raw_signals(x[d], [1, 18, 35], 511)
+		plot_raw_signals(x[d], [2, 19, 36], 512)
+		plot_raw_signals(x[d], [3, 20, 37], 513)
+		if "att_hidden" in layer_names:
+		    v_model = Model(inputs=model.input, outputs=model.get_layer("att_hidden").output)
+		    att_hidden = np.squeeze(v_model.predict_on_batch(x)[act_idx][-1], -1)
+		    plot_att(att_hidden)
+		if "att_input" in layer_names:
+		    v_model = Model(inputs=model.input, outputs=model.get_layer("att_input").output)
+		    att_input = v_model.predict_on_batch(x)[act_idx][-1]
+		    plot_att(att_input)
+		plt.show()
     return
 
 
