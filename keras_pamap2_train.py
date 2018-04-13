@@ -28,6 +28,7 @@ def train(model, data, random_batch=False, overlap=0.5, num_epochs=20, load=True
     epoch_size = data.df_train.shape[0] / (num_steps / 2) / batch_size
 
     # load model if model file exists
+    print('model.name:' + model.name)
     if load and os.path.exists(model.name + ".h5"):
         model.load_weights(model.name + '.h5')
 
@@ -94,7 +95,7 @@ def plot_att(att):
         plt.plot(att)
         plt.show()
     elif len(att.shape) == 2: # plot 2d as heatmap
-        plt.pcolor(att.transpose(), cmap="Wistia")
+        plt.pcolor(att.transpose(), cmap="YlOrRd")
 	#heatmap = plt.pcolor(att.transpose(), cmap = 'Wistia')
 	#plt.colorbar(heatmap)
     else:
