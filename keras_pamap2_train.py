@@ -60,7 +60,7 @@ def test(model, data, overlap=0.5):
     y_pred = np.array([0])
     y_true = np.array([0])
     for _ in xrange(epoch_size):
-        x, y = data.get_next_batch("validate", batch_size, num_steps, overlap=overlap, one_hot=True)
+        x, y = data.get_next_batch("test", batch_size, num_steps, overlap=overlap, one_hot=True)
         x = np.array(x)
         ts_loss, ts_acc = model.test_on_batch(x, y)
         ts_losses.append(ts_loss)
